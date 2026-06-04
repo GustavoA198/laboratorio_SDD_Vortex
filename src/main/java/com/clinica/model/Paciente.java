@@ -35,4 +35,7 @@ public class Paciente {
 
     @Column(name = "fecha_registro", nullable = false)
     private LocalDate fechaRegistro;
+
+    @Column(name = "username", unique = true)
+    private String username;
 }

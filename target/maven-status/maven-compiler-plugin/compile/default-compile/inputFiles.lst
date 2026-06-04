@@ -1,8 +1,12 @@
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\config\SecurityConfig.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\AuthController.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\CitaController.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\MedicoController.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\PacienteController.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\AuthResponse.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\CitaRequest.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\CitaResponse.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\LoginRequest.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\MedicoResponse.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\dto\PacienteResponse.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\exception\BusinessValidationException.java
@@ -13,9 +17,14 @@ C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clin
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\enums\EstadoCita.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\Medico.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\Paciente.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\Usuario.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\CitaRepository.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\MedicoRepository.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\PacienteRepository.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\UsuarioRepository.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\security\JwtAuthenticationFilter.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\AuthService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\CitaService.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\JwtService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\MedicoService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\PacienteService.java

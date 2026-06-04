@@ -11,6 +11,7 @@ import com.clinica.model.enums.EstadoCita;
 import com.clinica.repository.CitaRepository;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -72,31 +73,42 @@ public class CitaService {
     }
 
     /**
-     * Retrieves a cita by its ID.
+     * Retrieves a cita by its ID with ownership check.
      *
      * @param id the cita ID
+     * @param username the username of the authenticated user
+     * @param rol the role of the authenticated user
      * @return the cita response
      * @throws CitaNotFoundException if cita does not exist
+     * @throws AccessDeniedException if user does not have access to this cita
      */
-    public CitaResponse getCita(Long id) {
+    public CitaResponse getCita(Long id, String username, String rol) {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new CitaNotFoundException(id));
+
+        validarOwnership(cita, username, rol);
+
         return toResponse(cita);
     }
 
     /**
-     * Updates an existing cita only if it is in ACTIVA state.
+     * Updates an existing cita only if it is in ACTIVA state, with ownership check.
      *
      * @param id the cita ID
      * @param request the update request
+     * @param username the username of the authenticated user
+     * @param rol the role of the authenticated user
      * @return the updated cita response
      * @throws CitaNotFoundException if cita does not exist
      * @throws IllegalStateException if cita is not in ACTIVA state
      * @throws BusinessValidationException if validation rules are violated
+     * @throws AccessDeniedException if user does not have access to this cita
      */
-    public CitaResponse updateCita(Long id, CitaRequest request) {
+    public CitaResponse updateCita(Long id, CitaRequest request, String username, String rol) {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new CitaNotFoundException(id));
+
+        validarOwnership(cita, username, rol);
 
         if (cita.getEstado() != EstadoCita.ACTIVA) {
             throw new IllegalStateException(
@@ -124,15 +136,20 @@ public class CitaService {
     }
 
     /**
-     * Cancels a cita by changing its state to CANCELADA.
+     * Cancels a cita by changing its state to CANCELADA with ownership check.
      *
      * @param id the cita ID
+     * @param username the username of the authenticated user
+     * @param rol the role of the authenticated user
      * @return the cancelled cita response
      * @throws CitaNotFoundException if cita does not exist
+     * @throws AccessDeniedException if user does not have access to this cita
      */
-    public CitaResponse cancelCita(Long id) {
+    public CitaResponse cancelCita(Long id, String username, String rol) {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new CitaNotFoundException(id));
+
+        validarOwnership(cita, username, rol);
 
         cita.setEstado(EstadoCita.CANCELADA);
         Cita saved = citaRepository.save(cita);
@@ -140,7 +157,7 @@ public class CitaService {
     }
 
     /**
-     * Lists all citas.
+     * Lists all citas (admin only).
      *
      * @return list of all cita responses
      */
@@ -174,6 +191,20 @@ public class CitaService {
                 .filter(c -> c.getEstado() == EstadoCita.ACTIVA)
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Validates that the user has ownership of the cita or is MEDICO/ADMIN.
+     */
+    private void validarOwnership(Cita cita, String username, String rol) {
+        if ("MEDICO".equals(rol) || "ADMIN".equals(rol)) {
+            return; // MEDICO and ADMIN can access any cita
+        }
+
+        // PACIENTE can only access their own citas
+        if (!cita.getPaciente().getUsername().equals(username)) {
+            throw new AccessDeniedException("No puedes ver esta cita");
+        }
     }
 
     /**

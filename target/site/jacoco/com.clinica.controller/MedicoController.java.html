@@ -5,6 +5,7 @@ import com.clinica.service.MedicoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,9 +22,9 @@ public class MedicoController {
 
     private final MedicoService medicoService;
 
-<span class="nc" id="L24">    public MedicoController(MedicoService medicoService) {</span>
-<span class="nc" id="L25">        this.medicoService = medicoService;</span>
-<span class="nc" id="L26">    }</span>
+<span class="nc" id="L25">    public MedicoController(MedicoService medicoService) {</span>
+<span class="nc" id="L26">        this.medicoService = medicoService;</span>
+<span class="nc" id="L27">    }</span>
 
     /**
      * Retrieves a doctor by ID.
@@ -32,17 +33,18 @@ public class MedicoController {
      * @return 200 OK with doctor response, or 404 if not found
      */
     @GetMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Consultar médico&quot;, description = &quot;Retorna un médico por su ID&quot;)
     public ResponseEntity&lt;MedicoResponse&gt; getMedico(@PathVariable String id) {
-<span class="nc" id="L37">        return medicoService.getMedico(id)</span>
-<span class="nc" id="L38">                .map(medico -&gt; new MedicoResponse(</span>
-<span class="nc" id="L39">                        medico.getId(),</span>
-<span class="nc" id="L40">                        medico.getNombre(),</span>
-<span class="nc" id="L41">                        medico.getEspecialidad(),</span>
-<span class="nc" id="L42">                        medico.getEmail(),</span>
-<span class="nc" id="L43">                        medico.getHorarioAtencion()))</span>
-<span class="nc" id="L44">                .map(ResponseEntity::ok)</span>
-<span class="nc" id="L45">                .orElse(ResponseEntity.notFound().build());</span>
+<span class="nc" id="L39">        return medicoService.getMedico(id)</span>
+<span class="nc" id="L40">                .map(medico -&gt; new MedicoResponse(</span>
+<span class="nc" id="L41">                        medico.getId(),</span>
+<span class="nc" id="L42">                        medico.getNombre(),</span>
+<span class="nc" id="L43">                        medico.getEspecialidad(),</span>
+<span class="nc" id="L44">                        medico.getEmail(),</span>
+<span class="nc" id="L45">                        medico.getHorarioAtencion()))</span>
+<span class="nc" id="L46">                .map(ResponseEntity::ok)</span>
+<span class="nc" id="L47">                .orElse(ResponseEntity.notFound().build());</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

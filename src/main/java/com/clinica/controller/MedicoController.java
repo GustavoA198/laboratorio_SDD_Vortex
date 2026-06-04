@@ -5,6 +5,7 @@ import com.clinica.service.MedicoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +33,7 @@ public class MedicoController {
      * @return 200 OK with doctor response, or 404 if not found
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MEDICO', 'ADMIN')")
     @Operation(summary = "Consultar médico", description = "Retorna un médico por su ID")
     public ResponseEntity<MedicoResponse> getMedico(@PathVariable String id) {
         return medicoService.getMedico(id)

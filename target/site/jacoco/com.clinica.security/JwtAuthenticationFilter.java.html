@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtAuthenticationFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Microservicio Clinica</a> &gt; <a href="index.source.html" class="el_package">com.clinica.security</a> &gt; <span class="el_source">JwtAuthenticationFilter.java</span></div><h1>JwtAuthenticationFilter.java</h1><pre class="source lang-java linenums">package com.clinica.security;
+
+import com.clinica.service.JwtService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Filter that extracts and validates JWT tokens from Authorization header.
+ * Sets the SecurityContext with the authenticated user if token is valid.
+ */
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+
+<span class="nc" id="L28">    public JwtAuthenticationFilter(JwtService jwtService) {</span>
+<span class="nc" id="L29">        this.jwtService = jwtService;</span>
+<span class="nc" id="L30">    }</span>
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+<span class="nc" id="L36">        String authHeader = request.getHeader(&quot;Authorization&quot;);</span>
+
+<span class="nc bnc" id="L38" title="All 4 branches missed.">        if (authHeader != null &amp;&amp; authHeader.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L39">            String token = authHeader.substring(7);</span>
+
+<span class="nc bnc" id="L41" title="All 2 branches missed.">            if (jwtService.validateToken(token)) {</span>
+                try {
+<span class="nc" id="L43">                    Claims claims = jwtService.getClaims(token);</span>
+<span class="nc" id="L44">                    String username = claims.getSubject();</span>
+<span class="nc" id="L45">                    String rol = claims.get(&quot;rol&quot;, String.class);</span>
+
+<span class="nc" id="L47">                    List&lt;SimpleGrantedAuthority&gt; authorities = List.of(</span>
+                            new SimpleGrantedAuthority(&quot;ROLE_&quot; + rol)
+                    );
+
+<span class="nc" id="L51">                    UsernamePasswordAuthenticationToken authentication =</span>
+                            new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+<span class="nc" id="L54">                    SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="nc" id="L55">                } catch (JwtException e) {</span>
+                    // Token is invalid, clear context
+<span class="nc" id="L57">                    SecurityContextHolder.clearContext();</span>
+<span class="nc" id="L58">                }</span>
+            }
+        }
+
+<span class="nc" id="L62">        filterChain.doFilter(request, response);</span>
+<span class="nc" id="L63">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

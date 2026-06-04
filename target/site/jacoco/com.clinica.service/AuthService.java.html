@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Microservicio Clinica</a> &gt; <a href="index.source.html" class="el_package">com.clinica.service</a> &gt; <span class="el_source">AuthService.java</span></div><h1>AuthService.java</h1><pre class="source lang-java linenums">package com.clinica.service;
+
+import com.clinica.dto.AuthResponse;
+import com.clinica.dto.LoginRequest;
+import com.clinica.model.Usuario;
+import com.clinica.repository.UsuarioRepository;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service for authentication operations.
+ */
+@Service
+public class AuthService {
+
+    private static final long EXPIRATION_SECONDS = 20 * 60; // 20 minutes
+
+    private final UsuarioRepository usuarioRepository;
+    private final JwtService jwtService;
+
+<span class="fc" id="L21">    public AuthService(UsuarioRepository usuarioRepository, JwtService jwtService) {</span>
+<span class="fc" id="L22">        this.usuarioRepository = usuarioRepository;</span>
+<span class="fc" id="L23">        this.jwtService = jwtService;</span>
+<span class="fc" id="L24">    }</span>
+
+    /**
+     * Authenticates a user with username and password.
+     *
+     * @param request the login request with credentials
+     * @return the authentication response with JWT token
+     * @throws BadCredentialsException if credentials are invalid
+     */
+    public AuthResponse login(LoginRequest request) {
+<span class="fc" id="L34">        Usuario usuario = usuarioRepository.findByUsername(request.username())</span>
+<span class="fc" id="L35">                .orElseThrow(() -&gt; new BadCredentialsException(&quot;Credenciales inválidas&quot;));</span>
+
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (!usuario.getPassword().equals(request.password())) {</span>
+<span class="fc" id="L38">            throw new BadCredentialsException(&quot;Credenciales inválidas&quot;);</span>
+        }
+
+<span class="fc" id="L41">        String token = jwtService.createToken(usuario.getUsername(), usuario.getRol());</span>
+
+<span class="fc" id="L43">        return new AuthResponse(token, EXPIRATION_SECONDS);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

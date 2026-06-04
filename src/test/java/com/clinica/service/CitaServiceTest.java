@@ -304,8 +304,28 @@ class CitaServiceTest {
     class GetCitaTests {
 
         @Test
-        @DisplayName("Should return cita when exists")
-        void shouldReturnCitaWhenExists() {
+        @DisplayName("Should return cita when exists and user is owner")
+        void shouldReturnCitaWhenExistsAndUserIsOwner() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
+            Medico medico = createTestMedico();
+            Cita cita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
+
+            // When - PACIENTE accessing their own cita
+            CitaResponse response = citaService.getCita(1L, "PAC-001", "PACIENTE");
+
+            // Then
+            assertNotNull(response);
+            assertEquals(1L, response.id());
+            assertEquals("PAC-001", response.pacienteId());
+        }
+
+        @Test
+        @DisplayName("Should return cita when MEDICO accesses any cita")
+        void shouldReturnCitaWhenMedicoAccesses() {
             // Given
             Paciente paciente = createTestPaciente();
             Medico medico = createTestMedico();
@@ -313,13 +333,48 @@ class CitaServiceTest {
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
 
-            // When
-            CitaResponse response = citaService.getCita(1L);
+            // When - MEDICO can access any cita
+            CitaResponse response = citaService.getCita(1L, "MED-001", "MEDICO");
 
             // Then
             assertNotNull(response);
             assertEquals(1L, response.id());
-            assertEquals("PAC-001", response.pacienteId());
+        }
+
+        @Test
+        @DisplayName("Should return cita when ADMIN accesses any cita")
+        void shouldReturnCitaWhenAdminAccesses() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita cita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
+
+            // When - ADMIN can access any cita
+            CitaResponse response = citaService.getCita(1L, "admin", "ADMIN");
+
+            // Then
+            assertNotNull(response);
+            assertEquals(1L, response.id());
+        }
+
+        @Test
+        @DisplayName("Should throw AccessDeniedException when PACIENTE accesses another patient's cita")
+        void shouldThrowWhenPacienteAccessesOthersCita() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
+            Medico medico = createTestMedico();
+            Cita cita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
+
+            // When & Then - PAC-002 trying to access PAC-001's cita
+            assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> citaService.getCita(1L, "PAC-002", "PACIENTE")
+            );
         }
 
         @Test
@@ -331,7 +386,7 @@ class CitaServiceTest {
             // When & Then
             CitaNotFoundException exception = assertThrows(
                 CitaNotFoundException.class,
-                () -> citaService.getCita(999L)
+                () -> citaService.getCita(999L, "user", "ADMIN")
             );
             assertTrue(exception.getMessage().contains("999"));
         }
@@ -346,6 +401,7 @@ class CitaServiceTest {
         void shouldUpdateActivaCitaSuccessfully() {
             // Given
             Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
             Medico medico = createTestMedico();
             Cita existingCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
@@ -353,7 +409,7 @@ class CitaServiceTest {
             when(pacienteRepository.existsById("PAC-002")).thenReturn(true);
             when(medicoRepository.existsById("MED-001")).thenReturn(true);
 
-            Paciente paciente2 = Paciente.builder().id("PAC-002").nombre("María").build();
+            Paciente paciente2 = Paciente.builder().id("PAC-002").nombre("María").username("PAC-002").build();
             when(pacienteRepository.getReferenceById("PAC-002")).thenReturn(paciente2);
             when(medicoRepository.getReferenceById("MED-001")).thenReturn(medico);
 
@@ -364,8 +420,8 @@ class CitaServiceTest {
                 "PAC-002", "MED-001", newFecha, LocalTime.of(10, 0), "Nueva consulta"
             );
 
-            // When
-            CitaResponse response = citaService.updateCita(1L, updateRequest);
+            // When - PACIENTE updating their own cita
+            CitaResponse response = citaService.updateCita(1L, updateRequest, "PAC-001", "PACIENTE");
 
             // Then
             assertNotNull(response);
@@ -379,6 +435,7 @@ class CitaServiceTest {
         void shouldThrowWhenUpdatingNonActiva() {
             // Given
             Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
             Medico medico = createTestMedico();
             Cita cancelledCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.CANCELADA);
@@ -389,7 +446,7 @@ class CitaServiceTest {
             // When & Then
             IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> citaService.updateCita(1L, updateRequest)
+                () -> citaService.updateCita(1L, updateRequest, "PAC-001", "PACIENTE")
             );
             assertTrue(exception.getMessage().contains("ACTIVA"));
         }
@@ -404,7 +461,7 @@ class CitaServiceTest {
             // When & Then
             assertThrows(
                 CitaNotFoundException.class,
-                () -> citaService.updateCita(999L, updateRequest)
+                () -> citaService.updateCita(999L, updateRequest, "user", "ADMIN")
             );
         }
 
@@ -413,6 +470,7 @@ class CitaServiceTest {
         void shouldFailUpdateWithInvalidTime() {
             // Given
             Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
             Medico medico = createTestMedico();
             Cita existingCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
@@ -427,7 +485,27 @@ class CitaServiceTest {
             // When & Then
             assertThrows(
                 BusinessValidationException.class,
-                () -> citaService.updateCita(1L, invalidRequest)
+                () -> citaService.updateCita(1L, invalidRequest, "PAC-001", "PACIENTE")
+            );
+        }
+
+        @Test
+        @DisplayName("Should throw AccessDeniedException when PACIENTE tries to update another's cita")
+        void shouldThrowWhenPacienteUpdatesOthersCita() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
+            Medico medico = createTestMedico();
+            Cita existingCita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(existingCita));
+
+            CitaRequest updateRequest = createValidRequest();
+
+            // When & Then - PAC-002 trying to update PAC-001's cita
+            assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> citaService.updateCita(1L, updateRequest, "PAC-002", "PACIENTE")
             );
         }
     }
@@ -441,14 +519,15 @@ class CitaServiceTest {
         void shouldCancelCitaSuccessfully() {
             // Given
             Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
             Medico medico = createTestMedico();
             Cita activaCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(activaCita));
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            // When
-            CitaResponse response = citaService.cancelCita(1L);
+            // When - PACIENTE canceling their own cita
+            CitaResponse response = citaService.cancelCita(1L, "PAC-001", "PACIENTE");
 
             // Then
             assertNotNull(response);
@@ -465,8 +544,46 @@ class CitaServiceTest {
             // When & Then
             assertThrows(
                 CitaNotFoundException.class,
-                () -> citaService.cancelCita(999L)
+                () -> citaService.cancelCita(999L, "user", "ADMIN")
             );
+        }
+
+        @Test
+        @DisplayName("Should throw AccessDeniedException when PACIENTE tries to cancel another's cita")
+        void shouldThrowWhenPacienteCancelsOthersCita() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
+            Medico medico = createTestMedico();
+            Cita activaCita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(activaCita));
+
+            // When & Then - PAC-002 trying to cancel PAC-001's cita
+            assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> citaService.cancelCita(1L, "PAC-002", "PACIENTE")
+            );
+        }
+
+        @Test
+        @DisplayName("Should allow MEDICO to cancel any cita")
+        void shouldAllowMedicoToCancelAnyCita() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            paciente.setUsername("PAC-001");
+            Medico medico = createTestMedico();
+            Cita activaCita = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findById(1L)).thenReturn(Optional.of(activaCita));
+            when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When - MEDICO canceling any cita
+            CitaResponse response = citaService.cancelCita(1L, "MED-001", "MEDICO");
+
+            // Then
+            assertNotNull(response);
+            assertEquals("CANCELADA", response.estado());
         }
     }
 

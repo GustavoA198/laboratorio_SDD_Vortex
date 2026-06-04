@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +37,7 @@ public class CitaController {
      * @return 201 Created with the created cita response
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')")
     @Operation(summary = "Crear nueva cita", description = "Crea una nueva cita médica en estado ACTIVA")
     public ResponseEntity<CitaResponse> createCita(@Valid @RequestBody CitaRequest request) {
         CitaResponse response = citaService.createCita(request);
@@ -47,9 +51,11 @@ public class CitaController {
      * @return 200 OK with the cita response, or 404 if not found
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')")
     @Operation(summary = "Consultar cita", description = "Retorna una cita por su ID")
     public ResponseEntity<CitaResponse> getCita(@PathVariable Long id) {
-        CitaResponse response = citaService.getCita(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CitaResponse response = citaService.getCita(id, auth.getName(), extractRol(auth));
         return ResponseEntity.ok(response);
     }
 
@@ -73,11 +79,13 @@ public class CitaController {
      * @return 200 OK with updated cita, 404 if not found, 409 if not ACTIVA
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')")
     @Operation(summary = "Actualizar cita", description = "Actualiza una cita existente solo si está en estado ACTIVA")
     public ResponseEntity<CitaResponse> updateCita(
             @PathVariable Long id,
             @Valid @RequestBody CitaRequest request) {
-        CitaResponse response = citaService.updateCita(id, request);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CitaResponse response = citaService.updateCita(id, request, auth.getName(), extractRol(auth));
         return ResponseEntity.ok(response);
     }
 
@@ -88,9 +96,11 @@ public class CitaController {
      * @return 204 No Content on success, 404 if not found
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')")
     @Operation(summary = "Cancelar cita", description = "Cambia el estado de una cita a CANCELADA")
     public ResponseEntity<Void> cancelCita(@PathVariable Long id) {
-        citaService.cancelCita(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        citaService.cancelCita(id, auth.getName(), extractRol(auth));
         return ResponseEntity.noContent().build();
     }
 
@@ -101,6 +111,7 @@ public class CitaController {
      * @return 200 OK with list of active citas for the patient
      */
     @GetMapping("/mis-citas")
+    @PreAuthorize("hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')")
     @Operation(summary = "Mis citas", description = "Retorna las citas activas de un paciente")
     public ResponseEntity<List<CitaResponse>> getMisCitas(@RequestParam String pacienteId) {
         List<CitaResponse> responses = citaService.getCitasPorPaciente(pacienteId);
@@ -118,5 +129,12 @@ public class CitaController {
     public ResponseEntity<List<CitaResponse>> getCitasPorMedico(@PathVariable String medicoId) {
         List<CitaResponse> responses = citaService.getCitasPorMedico(medicoId);
         return ResponseEntity.ok(responses);
+    }
+
+    private String extractRol(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
+                .orElse("");
     }
 }

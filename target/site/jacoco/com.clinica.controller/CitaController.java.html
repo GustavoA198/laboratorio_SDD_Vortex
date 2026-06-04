@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,9 +26,9 @@ public class CitaController {
 
     private final CitaService citaService;
 
-<span class="nc" id="L26">    public CitaController(CitaService citaService) {</span>
-<span class="nc" id="L27">        this.citaService = citaService;</span>
-<span class="nc" id="L28">    }</span>
+<span class="nc" id="L29">    public CitaController(CitaService citaService) {</span>
+<span class="nc" id="L30">        this.citaService = citaService;</span>
+<span class="nc" id="L31">    }</span>
 
     /**
      * Creates a new medical appointment.
@@ -34,10 +37,11 @@ public class CitaController {
      * @return 201 Created with the created cita response
      */
     @PostMapping
+    @PreAuthorize(&quot;hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Crear nueva cita&quot;, description = &quot;Crea una nueva cita médica en estado ACTIVA&quot;)
     public ResponseEntity&lt;CitaResponse&gt; createCita(@Valid @RequestBody CitaRequest request) {
-<span class="nc" id="L39">        CitaResponse response = citaService.createCita(request);</span>
-<span class="nc" id="L40">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+<span class="nc" id="L43">        CitaResponse response = citaService.createCita(request);</span>
+<span class="nc" id="L44">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
     }
 
     /**
@@ -47,10 +51,12 @@ public class CitaController {
      * @return 200 OK with the cita response, or 404 if not found
      */
     @GetMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Consultar cita&quot;, description = &quot;Retorna una cita por su ID&quot;)
     public ResponseEntity&lt;CitaResponse&gt; getCita(@PathVariable Long id) {
-<span class="nc" id="L52">        CitaResponse response = citaService.getCita(id);</span>
-<span class="nc" id="L53">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L57">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc" id="L58">        CitaResponse response = citaService.getCita(id, auth.getName(), extractRol(auth));</span>
+<span class="nc" id="L59">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -61,8 +67,8 @@ public class CitaController {
     @GetMapping
     @Operation(summary = &quot;Listar todas las citas&quot;, description = &quot;Retorna una lista de todas las citas&quot;)
     public ResponseEntity&lt;List&lt;CitaResponse&gt;&gt; listCitas() {
-<span class="nc" id="L64">        List&lt;CitaResponse&gt; responses = citaService.listCitas();</span>
-<span class="nc" id="L65">        return ResponseEntity.ok(responses);</span>
+<span class="nc" id="L70">        List&lt;CitaResponse&gt; responses = citaService.listCitas();</span>
+<span class="nc" id="L71">        return ResponseEntity.ok(responses);</span>
     }
 
     /**
@@ -73,12 +79,14 @@ public class CitaController {
      * @return 200 OK with updated cita, 404 if not found, 409 if not ACTIVA
      */
     @PutMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Actualizar cita&quot;, description = &quot;Actualiza una cita existente solo si está en estado ACTIVA&quot;)
     public ResponseEntity&lt;CitaResponse&gt; updateCita(
             @PathVariable Long id,
             @Valid @RequestBody CitaRequest request) {
-<span class="nc" id="L80">        CitaResponse response = citaService.updateCita(id, request);</span>
-<span class="nc" id="L81">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L87">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc" id="L88">        CitaResponse response = citaService.updateCita(id, request, auth.getName(), extractRol(auth));</span>
+<span class="nc" id="L89">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -88,10 +96,12 @@ public class CitaController {
      * @return 204 No Content on success, 404 if not found
      */
     @DeleteMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Cancelar cita&quot;, description = &quot;Cambia el estado de una cita a CANCELADA&quot;)
     public ResponseEntity&lt;Void&gt; cancelCita(@PathVariable Long id) {
-<span class="nc" id="L93">        citaService.cancelCita(id);</span>
-<span class="nc" id="L94">        return ResponseEntity.noContent().build();</span>
+<span class="nc" id="L102">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc" id="L103">        citaService.cancelCita(id, auth.getName(), extractRol(auth));</span>
+<span class="nc" id="L104">        return ResponseEntity.noContent().build();</span>
     }
 
     /**
@@ -101,10 +111,11 @@ public class CitaController {
      * @return 200 OK with list of active citas for the patient
      */
     @GetMapping(&quot;/mis-citas&quot;)
+    @PreAuthorize(&quot;hasAnyRole('PACIENTE', 'MEDICO', 'ADMIN')&quot;)
     @Operation(summary = &quot;Mis citas&quot;, description = &quot;Retorna las citas activas de un paciente&quot;)
     public ResponseEntity&lt;List&lt;CitaResponse&gt;&gt; getMisCitas(@RequestParam String pacienteId) {
-<span class="nc" id="L106">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorPaciente(pacienteId);</span>
-<span class="nc" id="L107">        return ResponseEntity.ok(responses);</span>
+<span class="nc" id="L117">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorPaciente(pacienteId);</span>
+<span class="nc" id="L118">        return ResponseEntity.ok(responses);</span>
     }
 
     /**
@@ -116,8 +127,15 @@ public class CitaController {
     @GetMapping(&quot;/medico/{medicoId}&quot;)
     @Operation(summary = &quot;Citas por médico&quot;, description = &quot;Retorna las citas activas de un médico&quot;)
     public ResponseEntity&lt;List&lt;CitaResponse&gt;&gt; getCitasPorMedico(@PathVariable String medicoId) {
-<span class="nc" id="L119">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorMedico(medicoId);</span>
-<span class="nc" id="L120">        return ResponseEntity.ok(responses);</span>
+<span class="nc" id="L130">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorMedico(medicoId);</span>
+<span class="nc" id="L131">        return ResponseEntity.ok(responses);</span>
+    }
+
+    private String extractRol(Authentication auth) {
+<span class="nc" id="L135">        return auth.getAuthorities().stream()</span>
+<span class="nc" id="L136">                .findFirst()</span>
+<span class="nc" id="L137">                .map(a -&gt; a.getAuthority().replace(&quot;ROLE_&quot;, &quot;&quot;))</span>
+<span class="nc" id="L138">                .orElse(&quot;&quot;);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
