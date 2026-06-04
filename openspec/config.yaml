@@ -1,0 +1,58 @@
+# OpenSpec Configuration — microservicio-clinica
+schema: spec-driven
+
+context: |
+  Tech stack: Spring Boot 4.0.6, Spring Security + JWT 7.x, Spring Data JPA, H2 in-memory
+  Architecture: Microservicio REST para clínica médica — CRUD de citas médicas
+  Testing: JUnit 5 + Mockito, Spring Boot Test
+  Style: Java 17+, Maven build
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns
+    tdd: true
+    test_command: mvn test
+  verify:
+    test_command: mvn test
+    build_command: mvn clean package
+    coverage_threshold: 0
+
+testing:
+  strict_tdd: true
+  runner:
+    command: mvn test
+    framework: JUnit 5
+  layers:
+    unit:
+      available: true
+      tool: JUnit 5 + Mockito
+    integration:
+      available: true
+      tool: Spring Boot Test (@SpringBootTest, TestRestTemplate, WebTestClient)
+    e2e:
+      available: false
+      tool: —
+  coverage:
+    available: true
+    tool: JaCoCo (mvn verify)
+    command: mvn verify -Djacoco
+  quality:
+    linter:
+      available: true
+      tool: Checkstyle
+      command: mvn checkstyle:check
+    formatter:
+      available: true
+      tool: Google Java Format / Spring Boot formatter
+      command: mvn formatter:format

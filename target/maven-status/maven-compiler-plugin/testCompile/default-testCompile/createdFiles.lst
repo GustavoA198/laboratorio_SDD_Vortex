@@ -1,0 +1,6 @@
+com\clinica\service\CitaServiceTest$CreateCitaTests.class
+com\clinica\service\CitaServiceTest$GetCitaTests.class
+com\clinica\service\CitaServiceTest.class
+com\clinica\service\CitaServiceTest$ListCitasTests.class
+com\clinica\service\CitaServiceTest$UpdateCitaTests.class
+com\clinica\service\CitaServiceTest$CancelCitaTests.class

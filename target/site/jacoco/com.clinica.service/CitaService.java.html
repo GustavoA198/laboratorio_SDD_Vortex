@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CitaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Microservicio Clinica</a> &gt; <a href="index.source.html" class="el_package">com.clinica.service</a> &gt; <span class="el_source">CitaService.java</span></div><h1>CitaService.java</h1><pre class="source lang-java linenums">package com.clinica.service;
+
+import com.clinica.dto.CitaRequest;
+import com.clinica.dto.CitaResponse;
+import com.clinica.exception.BusinessValidationException;
+import com.clinica.exception.CitaNotFoundException;
+import com.clinica.model.Cita;
+import com.clinica.model.enums.EstadoCita;
+import com.clinica.repository.CitaRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+
+/**
+ * Service layer for medical appointment (Cita) business logic.
+ * Handles CRUD operations and domain validations.
+ */
+@Service
+public class CitaService {
+
+<span class="fc" id="L24">    private static final LocalTime HORA_INICIO = LocalTime.of(8, 0);</span>
+<span class="fc" id="L25">    private static final LocalTime HORA_FIN = LocalTime.of(17, 0);</span>
+    private static final int SLOT_MINUTOS = 30;
+
+    private final CitaRepository citaRepository;
+
+<span class="fc" id="L30">    public CitaService(CitaRepository citaRepository) {</span>
+<span class="fc" id="L31">        this.citaRepository = citaRepository;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Creates a new medical appointment with validations.
+     *
+     * @param request the cita creation request
+     * @return the created cita response
+     * @throws BusinessValidationException if validation rules are violated
+     */
+    public CitaResponse createCita(CitaRequest request) {
+<span class="fc" id="L42">        validarHorario(request.hora());</span>
+<span class="fc" id="L43">        validarSlot(request.hora());</span>
+<span class="fc" id="L44">        validarDiaHabil(request.fecha());</span>
+
+<span class="fc" id="L46">        Cita cita = Cita.builder()</span>
+<span class="fc" id="L47">                .pacienteId(request.pacienteId())</span>
+<span class="fc" id="L48">                .medicoId(request.medicoId())</span>
+<span class="fc" id="L49">                .fecha(request.fecha())</span>
+<span class="fc" id="L50">                .hora(request.hora())</span>
+<span class="fc" id="L51">                .estado(EstadoCita.ACTIVA)</span>
+<span class="fc" id="L52">                .motivoConsulta(request.motivoConsulta())</span>
+<span class="fc" id="L53">                .build();</span>
+
+<span class="fc" id="L55">        Cita saved = citaRepository.save(cita);</span>
+<span class="fc" id="L56">        return toResponse(saved);</span>
+    }
+
+    /**
+     * Retrieves a cita by its ID.
+     *
+     * @param id the cita ID
+     * @return the cita response
+     * @throws CitaNotFoundException if cita does not exist
+     */
+    public CitaResponse getCita(Long id) {
+<span class="fc" id="L67">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L68">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+<span class="fc" id="L69">        return toResponse(cita);</span>
+    }
+
+    /**
+     * Updates an existing cita only if it is in ACTIVA state.
+     *
+     * @param id the cita ID
+     * @param request the update request
+     * @return the updated cita response
+     * @throws CitaNotFoundException if cita does not exist
+     * @throws IllegalStateException if cita is not in ACTIVA state
+     * @throws BusinessValidationException if validation rules are violated
+     */
+    public CitaResponse updateCita(Long id, CitaRequest request) {
+<span class="fc" id="L83">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L84">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (cita.getEstado() != EstadoCita.ACTIVA) {</span>
+<span class="fc" id="L87">            throw new IllegalStateException(</span>
+<span class="fc" id="L88">                &quot;No se puede actualizar una cita que no está en estado ACTIVA. Estado actual: &quot; + cita.getEstado()</span>
+            );
+        }
+
+<span class="fc" id="L92">        validarHorario(request.hora());</span>
+<span class="fc" id="L93">        validarSlot(request.hora());</span>
+<span class="fc" id="L94">        validarDiaHabil(request.fecha());</span>
+
+<span class="fc" id="L96">        cita.setPacienteId(request.pacienteId());</span>
+<span class="fc" id="L97">        cita.setMedicoId(request.medicoId());</span>
+<span class="fc" id="L98">        cita.setFecha(request.fecha());</span>
+<span class="fc" id="L99">        cita.setHora(request.hora());</span>
+<span class="fc" id="L100">        cita.setMotivoConsulta(request.motivoConsulta());</span>
+
+<span class="fc" id="L102">        Cita updated = citaRepository.save(cita);</span>
+<span class="fc" id="L103">        return toResponse(updated);</span>
+    }
+
+    /**
+     * Cancels a cita by changing its state to CANCELADA.
+     *
+     * @param id the cita ID
+     * @return the cancelled cita response
+     * @throws CitaNotFoundException if cita does not exist
+     */
+    public CitaResponse cancelCita(Long id) {
+<span class="fc" id="L114">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L115">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+
+<span class="fc" id="L117">        cita.setEstado(EstadoCita.CANCELADA);</span>
+<span class="fc" id="L118">        Cita saved = citaRepository.save(cita);</span>
+<span class="fc" id="L119">        return toResponse(saved);</span>
+    }
+
+    /**
+     * Lists all citas.
+     *
+     * @return list of all cita responses
+     */
+    public List&lt;CitaResponse&gt; listCitas() {
+<span class="fc" id="L128">        return citaRepository.findAll().stream()</span>
+<span class="fc" id="L129">                .map(this::toResponse)</span>
+<span class="fc" id="L130">                .toList();</span>
+    }
+
+    /**
+     * Validates that the hora is within the allowed range (08:00-17:00).
+     */
+    private void validarHorario(LocalTime hora) {
+<span class="fc bfc" id="L137" title="All 4 branches covered.">        if (hora.isBefore(HORA_INICIO) || hora.isAfter(HORA_FIN)) {</span>
+<span class="fc" id="L138">            throw new BusinessValidationException(</span>
+                &quot;Horario fuera de rango (08:00-17:00)&quot;
+            );
+        }
+<span class="fc" id="L142">    }</span>
+
+    /**
+     * Validates that the hora is on a valid slot (:00 or :30).
+     */
+    private void validarSlot(LocalTime hora) {
+<span class="fc" id="L148">        int minutos = hora.getMinute();</span>
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">        if (minutos != 0 &amp;&amp; minutos != 30) {</span>
+<span class="fc" id="L150">            throw new BusinessValidationException(</span>
+                &quot;Duración debe ser 30 minutos en slots de 30 min&quot;
+            );
+        }
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * Validates that the fecha is a weekday (Monday-Friday).
+     */
+    private void validarDiaHabil(LocalDate fecha) {
+<span class="fc" id="L160">        DayOfWeek day = fecha.getDayOfWeek();</span>
+<span class="fc bfc" id="L161" title="All 4 branches covered.">        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {</span>
+<span class="fc" id="L162">            throw new BusinessValidationException(</span>
+                &quot;No se permiten citas en fins de semana&quot;
+            );
+        }
+<span class="fc" id="L166">    }</span>
+
+    /**
+     * Converts a Cita entity to a CitaResponse DTO.
+     */
+    private CitaResponse toResponse(Cita cita) {
+<span class="fc" id="L172">        return new CitaResponse(</span>
+<span class="fc" id="L173">            cita.getId(),</span>
+<span class="fc" id="L174">            cita.getPacienteId(),</span>
+<span class="fc" id="L175">            cita.getMedicoId(),</span>
+<span class="fc" id="L176">            cita.getFecha(),</span>
+<span class="fc" id="L177">            cita.getHora(),</span>
+<span class="fc" id="L178">            cita.getEstado().name(),</span>
+<span class="fc" id="L179">            cita.getMotivoConsulta(),</span>
+<span class="fc" id="L180">            cita.getFechaCreacion()</span>
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
