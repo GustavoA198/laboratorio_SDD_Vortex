@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RateLimitFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Microservicio Clinica</a> &gt; <a href="index.source.html" class="el_package">com.clinica.config</a> &gt; <span class="el_source">RateLimitFilter.java</span></div><h1>RateLimitFilter.java</h1><pre class="source lang-java linenums">package com.clinica.config;
+
+import com.clinica.exception.RateLimitExceededException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Filter that enforces rate limiting per user.
+ * Uses a sliding window algorithm with ConcurrentHashMap for thread safety.
+ * Limits to 10 requests per minute per user.
+ */
+@Component
+<span class="fc" id="L25">public class RateLimitFilter extends OncePerRequestFilter {</span>
+
+    private static final int MAX_REQUESTS = 10;
+    private static final long WINDOW_MS = 60_000; // 1 minute
+
+<span class="fc" id="L30">    private final Map&lt;String, List&lt;Long&gt;&gt; requests = new ConcurrentHashMap&lt;&gt;();</span>
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+<span class="fc" id="L36">        String user = getCurrentUser();</span>
+
+        // Skip rate limiting for unauthenticated requests
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L40">            filterChain.doFilter(request, response);</span>
+<span class="fc" id="L41">            return;</span>
+        }
+
+<span class="fc" id="L44">        List&lt;Long&gt; timestamps = requests.computeIfAbsent(user, k -&gt; new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L45">        long now = System.currentTimeMillis();</span>
+
+        // Remove expired timestamps
+<span class="pc bnc" id="L48" title="All 2 branches missed.">        timestamps.removeIf(t -&gt; now - t &gt; WINDOW_MS);</span>
+
+        // Check rate limit
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (timestamps.size() &gt;= MAX_REQUESTS) {</span>
+<span class="nc" id="L52">            response.setStatus(429);</span>
+<span class="nc" id="L53">            response.setContentType(&quot;application/json&quot;);</span>
+<span class="nc" id="L54">            response.getWriter().write(</span>
+                &quot;{\&quot;error\&quot;:\&quot;RATE_LIMIT_EXCEEDED\&quot;,\&quot;message\&quot;:\&quot;Rate limit exceeded. Maximum 10 requests per minute allowed.\&quot;}&quot;
+            );
+<span class="nc" id="L57">            return;</span>
+        }
+
+        // Add current request timestamp
+<span class="fc" id="L61">        timestamps.add(now);</span>
+
+<span class="fc" id="L63">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * Get the current authenticated username from SecurityContext.
+     *
+     * @return the username or null if not authenticated
+     */
+    private String getCurrentUser() {
+<span class="fc" id="L72">        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">        if (authentication != null &amp;&amp; authentication.isAuthenticated()) {</span>
+<span class="fc" id="L74">            return authentication.getName();</span>
+        }
+<span class="fc" id="L76">        return null;</span>
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        // Skip rate limiting for auth endpoints
+<span class="fc" id="L82">        return request.getRequestURI().startsWith(&quot;/api/v1/auth/&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

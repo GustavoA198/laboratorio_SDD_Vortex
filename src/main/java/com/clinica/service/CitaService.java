@@ -33,13 +33,16 @@ public class CitaService {
     private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
+    private final AuditService auditService;
 
     public CitaService(CitaRepository citaRepository,
                        PacienteRepository pacienteRepository,
-                       MedicoRepository medicoRepository) {
+                       MedicoRepository medicoRepository,
+                       AuditService auditService) {
         this.citaRepository = citaRepository;
         this.pacienteRepository = pacienteRepository;
         this.medicoRepository = medicoRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -55,6 +58,8 @@ public class CitaService {
         validarDiaHabil(request.fecha());
         validarExistenciaPaciente(request.pacienteId());
         validarExistenciaMedico(request.medicoId());
+        validarMax3CitasActivas(request.pacienteId());
+        validarAntiDuplicados(request.medicoId(), request.fecha(), request.hora());
 
         Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());
         Medico medico = medicoRepository.getReferenceById(request.medicoId());
@@ -69,6 +74,7 @@ public class CitaService {
                 .build();
 
         Cita saved = citaRepository.save(cita);
+        auditService.logCreate(saved.getPaciente().getUsername(), saved.getId(), null);
         return toResponse(saved);
     }
 
@@ -88,6 +94,7 @@ public class CitaService {
 
         validarOwnership(cita, username, rol);
 
+        auditService.logGet(username, cita.getId());
         return toResponse(cita);
     }
 
@@ -132,6 +139,7 @@ public class CitaService {
         cita.setMotivoConsulta(request.motivoConsulta());
 
         Cita updated = citaRepository.save(cita);
+        auditService.logUpdate(username, updated.getId(), null);
         return toResponse(updated);
     }
 
@@ -153,6 +161,7 @@ public class CitaService {
 
         cita.setEstado(EstadoCita.CANCELADA);
         Cita saved = citaRepository.save(cita);
+        auditService.logCancel(username, saved.getId(), null);
         return toResponse(saved);
     }
 
@@ -266,6 +275,38 @@ public class CitaService {
         if (!medicoRepository.existsById(medicoId)) {
             throw new BusinessValidationException(
                 "Médico no encontrado: " + medicoId
+            );
+        }
+    }
+
+    /**
+     * Validates that the patient does not have 3 or more active citas.
+     *
+     * @param pacienteId the patient ID
+     * @throws BusinessValidationException if patient already has 3 active citas
+     */
+    private void validarMax3CitasActivas(String pacienteId) {
+        long activeCount = citaRepository.countByPacienteIdAndEstado(pacienteId, EstadoCita.ACTIVA);
+        if (activeCount >= 3) {
+            throw new BusinessValidationException(
+                "El paciente ya tiene 3 citas activas. No se puede crear más."
+            );
+        }
+    }
+
+    /**
+     * Validates that no duplicate cita exists for the same doctor, date, and time.
+     *
+     * @param medicoId the doctor ID
+     * @param fecha the appointment date
+     * @param hora the appointment time
+     * @throws BusinessValidationException if a duplicate cita already exists
+     */
+    private void validarAntiDuplicados(String medicoId, LocalDate fecha, LocalTime hora) {
+        boolean exists = citaRepository.existsByMedicoIdAndFechaAndHora(medicoId, fecha, hora);
+        if (exists) {
+            throw new BusinessValidationException(
+                "Ya existe una cita con este médico a esta hora"
             );
         }
     }

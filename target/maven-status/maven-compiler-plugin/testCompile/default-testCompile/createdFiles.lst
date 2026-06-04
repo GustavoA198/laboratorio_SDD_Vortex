@@ -1,4 +1,5 @@
 com\clinica\service\JwtServiceTest.class
+com\clinica\service\ValidacionCitasTest$AntiDuplicadosTests.class
 com\clinica\service\CitaServiceTest$GetCitaTests.class
 com\clinica\model\CitaTest.class
 com\clinica\model\MedicoTest.class
@@ -6,12 +7,14 @@ com\clinica\service\AuthServiceTest.class
 com\clinica\service\CitaServiceTest$CancelCitaTests.class
 com\clinica\service\CitaServiceTest.class
 com\clinica\service\CitaServiceTest$ListCitasTests.class
+com\clinica\service\ValidacionCitasTest$Max3CitasActivasTests.class
 com\clinica\service\CitaServiceTest$CreateCitaTests.class
 com\clinica\service\MedicoServiceTest$ExistsByIdTests.class
 com\clinica\service\MedicoServiceTest$GetMedicoTests.class
 com\clinica\service\PacienteServiceTest.class
 com\clinica\service\JwtServiceTest$CreateToken.class
 com\clinica\service\JwtServiceTest$ValidateToken.class
+com\clinica\config\RateLimitFilterTest.class
 com\clinica\service\JwtServiceTest$GetRolFromToken.class
 com\clinica\service\PacienteServiceTest$GetPacienteTests.class
 com\clinica\service\CitaServiceTest$GetCitasPorPacienteTests.class
@@ -20,6 +23,7 @@ com\clinica\service\MedicoServiceTest.class
 com\clinica\service\CitaServiceTest$UpdateCitaTests.class
 com\clinica\service\CitaServiceTest$GetCitasPorMedicoTests.class
 com\clinica\service\JwtServiceTest$GetClaims.class
+com\clinica\service\ValidacionCitasTest.class
 com\clinica\model\PacienteTest.class
 com\clinica\service\AuthServiceTest$Login.class
 com\clinica\service\JwtServiceTest$GetUsernameFromToken.class

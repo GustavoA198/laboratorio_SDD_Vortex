@@ -44,6 +44,9 @@ class CitaServiceTest {
     @Mock
     private MedicoRepository medicoRepository;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private CitaService citaService;
 

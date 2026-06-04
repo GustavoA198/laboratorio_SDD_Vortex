@@ -1,9 +1,11 @@
 com\clinica\model\Usuario$UsuarioBuilder.class
 com\clinica\model\Usuario.class
+com\clinica\service\AuditService.class
 com\clinica\dto\LoginRequest.class
 com\clinica\dto\MedicoResponse.class
 com\clinica\dto\PacienteResponse.class
 com\clinica\repository\UsuarioRepository.class
+com\clinica\exception\RateLimitExceededException.class
 com\clinica\model\Cita$CitaBuilder.class
 com\clinica\repository\PacienteRepository.class
 com\clinica\exception\BusinessValidationException.class
@@ -16,6 +18,7 @@ com\clinica\controller\MedicoController.class
 com\clinica\controller\AuthController.class
 com\clinica\repository\MedicoRepository.class
 com\clinica\security\JwtAuthenticationFilter.class
+com\clinica\config\RateLimitFilter.class
 com\clinica\config\SecurityConfig.class
 com\clinica\model\Medico.class
 com\clinica\exception\GlobalExceptionHandler.class

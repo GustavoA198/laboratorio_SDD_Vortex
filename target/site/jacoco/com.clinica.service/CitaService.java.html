@@ -33,14 +33,17 @@ public class CitaService {
     private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
+    private final AuditService auditService;
 
     public CitaService(CitaRepository citaRepository,
                        PacienteRepository pacienteRepository,
-<span class="fc" id="L39">                       MedicoRepository medicoRepository) {</span>
-<span class="fc" id="L40">        this.citaRepository = citaRepository;</span>
-<span class="fc" id="L41">        this.pacienteRepository = pacienteRepository;</span>
-<span class="fc" id="L42">        this.medicoRepository = medicoRepository;</span>
-<span class="fc" id="L43">    }</span>
+                       MedicoRepository medicoRepository,
+<span class="fc" id="L41">                       AuditService auditService) {</span>
+<span class="fc" id="L42">        this.citaRepository = citaRepository;</span>
+<span class="fc" id="L43">        this.pacienteRepository = pacienteRepository;</span>
+<span class="fc" id="L44">        this.medicoRepository = medicoRepository;</span>
+<span class="fc" id="L45">        this.auditService = auditService;</span>
+<span class="fc" id="L46">    }</span>
 
     /**
      * Creates a new medical appointment with validations.
@@ -50,26 +53,29 @@ public class CitaService {
      * @throws BusinessValidationException if validation rules are violated
      */
     public CitaResponse createCita(CitaRequest request) {
-<span class="fc" id="L53">        validarHorario(request.hora());</span>
-<span class="fc" id="L54">        validarSlot(request.hora());</span>
-<span class="fc" id="L55">        validarDiaHabil(request.fecha());</span>
-<span class="fc" id="L56">        validarExistenciaPaciente(request.pacienteId());</span>
-<span class="fc" id="L57">        validarExistenciaMedico(request.medicoId());</span>
+<span class="fc" id="L56">        validarHorario(request.hora());</span>
+<span class="fc" id="L57">        validarSlot(request.hora());</span>
+<span class="fc" id="L58">        validarDiaHabil(request.fecha());</span>
+<span class="fc" id="L59">        validarExistenciaPaciente(request.pacienteId());</span>
+<span class="fc" id="L60">        validarExistenciaMedico(request.medicoId());</span>
+<span class="fc" id="L61">        validarMax3CitasActivas(request.pacienteId());</span>
+<span class="fc" id="L62">        validarAntiDuplicados(request.medicoId(), request.fecha(), request.hora());</span>
 
-<span class="fc" id="L59">        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());</span>
-<span class="fc" id="L60">        Medico medico = medicoRepository.getReferenceById(request.medicoId());</span>
+<span class="fc" id="L64">        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());</span>
+<span class="fc" id="L65">        Medico medico = medicoRepository.getReferenceById(request.medicoId());</span>
 
-<span class="fc" id="L62">        Cita cita = Cita.builder()</span>
-<span class="fc" id="L63">                .paciente(paciente)</span>
-<span class="fc" id="L64">                .medico(medico)</span>
-<span class="fc" id="L65">                .fecha(request.fecha())</span>
-<span class="fc" id="L66">                .hora(request.hora())</span>
-<span class="fc" id="L67">                .estado(EstadoCita.ACTIVA)</span>
-<span class="fc" id="L68">                .motivoConsulta(request.motivoConsulta())</span>
-<span class="fc" id="L69">                .build();</span>
+<span class="fc" id="L67">        Cita cita = Cita.builder()</span>
+<span class="fc" id="L68">                .paciente(paciente)</span>
+<span class="fc" id="L69">                .medico(medico)</span>
+<span class="fc" id="L70">                .fecha(request.fecha())</span>
+<span class="fc" id="L71">                .hora(request.hora())</span>
+<span class="fc" id="L72">                .estado(EstadoCita.ACTIVA)</span>
+<span class="fc" id="L73">                .motivoConsulta(request.motivoConsulta())</span>
+<span class="fc" id="L74">                .build();</span>
 
-<span class="fc" id="L71">        Cita saved = citaRepository.save(cita);</span>
-<span class="fc" id="L72">        return toResponse(saved);</span>
+<span class="fc" id="L76">        Cita saved = citaRepository.save(cita);</span>
+<span class="fc" id="L77">        auditService.logCreate(saved.getPaciente().getUsername(), saved.getId(), null);</span>
+<span class="fc" id="L78">        return toResponse(saved);</span>
     }
 
     /**
@@ -83,12 +89,13 @@ public class CitaService {
      * @throws AccessDeniedException if user does not have access to this cita
      */
     public CitaResponse getCita(Long id, String username, String rol) {
-<span class="fc" id="L86">        Cita cita = citaRepository.findById(id)</span>
-<span class="fc" id="L87">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+<span class="fc" id="L92">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L93">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
 
-<span class="fc" id="L89">        validarOwnership(cita, username, rol);</span>
+<span class="fc" id="L95">        validarOwnership(cita, username, rol);</span>
 
-<span class="fc" id="L91">        return toResponse(cita);</span>
+<span class="fc" id="L97">        auditService.logGet(username, cita.getId());</span>
+<span class="fc" id="L98">        return toResponse(cita);</span>
     }
 
     /**
@@ -105,34 +112,35 @@ public class CitaService {
      * @throws AccessDeniedException if user does not have access to this cita
      */
     public CitaResponse updateCita(Long id, CitaRequest request, String username, String rol) {
-<span class="fc" id="L108">        Cita cita = citaRepository.findById(id)</span>
-<span class="fc" id="L109">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+<span class="fc" id="L115">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L116">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
 
-<span class="fc" id="L111">        validarOwnership(cita, username, rol);</span>
+<span class="fc" id="L118">        validarOwnership(cita, username, rol);</span>
 
-<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (cita.getEstado() != EstadoCita.ACTIVA) {</span>
-<span class="fc" id="L114">            throw new IllegalStateException(</span>
-<span class="fc" id="L115">                &quot;No se puede actualizar una cita que no está en estado ACTIVA. Estado actual: &quot; + cita.getEstado()</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (cita.getEstado() != EstadoCita.ACTIVA) {</span>
+<span class="fc" id="L121">            throw new IllegalStateException(</span>
+<span class="fc" id="L122">                &quot;No se puede actualizar una cita que no está en estado ACTIVA. Estado actual: &quot; + cita.getEstado()</span>
             );
         }
 
-<span class="fc" id="L119">        validarHorario(request.hora());</span>
-<span class="fc" id="L120">        validarSlot(request.hora());</span>
-<span class="fc" id="L121">        validarDiaHabil(request.fecha());</span>
-<span class="fc" id="L122">        validarExistenciaPaciente(request.pacienteId());</span>
-<span class="fc" id="L123">        validarExistenciaMedico(request.medicoId());</span>
+<span class="fc" id="L126">        validarHorario(request.hora());</span>
+<span class="fc" id="L127">        validarSlot(request.hora());</span>
+<span class="fc" id="L128">        validarDiaHabil(request.fecha());</span>
+<span class="fc" id="L129">        validarExistenciaPaciente(request.pacienteId());</span>
+<span class="fc" id="L130">        validarExistenciaMedico(request.medicoId());</span>
 
-<span class="fc" id="L125">        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());</span>
-<span class="fc" id="L126">        Medico medico = medicoRepository.getReferenceById(request.medicoId());</span>
+<span class="fc" id="L132">        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());</span>
+<span class="fc" id="L133">        Medico medico = medicoRepository.getReferenceById(request.medicoId());</span>
 
-<span class="fc" id="L128">        cita.setPaciente(paciente);</span>
-<span class="fc" id="L129">        cita.setMedico(medico);</span>
-<span class="fc" id="L130">        cita.setFecha(request.fecha());</span>
-<span class="fc" id="L131">        cita.setHora(request.hora());</span>
-<span class="fc" id="L132">        cita.setMotivoConsulta(request.motivoConsulta());</span>
+<span class="fc" id="L135">        cita.setPaciente(paciente);</span>
+<span class="fc" id="L136">        cita.setMedico(medico);</span>
+<span class="fc" id="L137">        cita.setFecha(request.fecha());</span>
+<span class="fc" id="L138">        cita.setHora(request.hora());</span>
+<span class="fc" id="L139">        cita.setMotivoConsulta(request.motivoConsulta());</span>
 
-<span class="fc" id="L134">        Cita updated = citaRepository.save(cita);</span>
-<span class="fc" id="L135">        return toResponse(updated);</span>
+<span class="fc" id="L141">        Cita updated = citaRepository.save(cita);</span>
+<span class="fc" id="L142">        auditService.logUpdate(username, updated.getId(), null);</span>
+<span class="fc" id="L143">        return toResponse(updated);</span>
     }
 
     /**
@@ -146,14 +154,15 @@ public class CitaService {
      * @throws AccessDeniedException if user does not have access to this cita
      */
     public CitaResponse cancelCita(Long id, String username, String rol) {
-<span class="fc" id="L149">        Cita cita = citaRepository.findById(id)</span>
-<span class="fc" id="L150">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
+<span class="fc" id="L157">        Cita cita = citaRepository.findById(id)</span>
+<span class="fc" id="L158">                .orElseThrow(() -&gt; new CitaNotFoundException(id));</span>
 
-<span class="fc" id="L152">        validarOwnership(cita, username, rol);</span>
+<span class="fc" id="L160">        validarOwnership(cita, username, rol);</span>
 
-<span class="fc" id="L154">        cita.setEstado(EstadoCita.CANCELADA);</span>
-<span class="fc" id="L155">        Cita saved = citaRepository.save(cita);</span>
-<span class="fc" id="L156">        return toResponse(saved);</span>
+<span class="fc" id="L162">        cita.setEstado(EstadoCita.CANCELADA);</span>
+<span class="fc" id="L163">        Cita saved = citaRepository.save(cita);</span>
+<span class="fc" id="L164">        auditService.logCancel(username, saved.getId(), null);</span>
+<span class="fc" id="L165">        return toResponse(saved);</span>
     }
 
     /**
@@ -162,9 +171,9 @@ public class CitaService {
      * @return list of all cita responses
      */
     public List&lt;CitaResponse&gt; listCitas() {
-<span class="fc" id="L165">        return citaRepository.findAll().stream()</span>
-<span class="fc" id="L166">                .map(this::toResponse)</span>
-<span class="fc" id="L167">                .toList();</span>
+<span class="fc" id="L174">        return citaRepository.findAll().stream()</span>
+<span class="fc" id="L175">                .map(this::toResponse)</span>
+<span class="fc" id="L176">                .toList();</span>
     }
 
     /**
@@ -174,10 +183,10 @@ public class CitaService {
      * @return list of active cita responses for the patient
      */
     public List&lt;CitaResponse&gt; getCitasPorPaciente(String pacienteId) {
-<span class="fc" id="L177">        return citaRepository.findByPacienteId(pacienteId).stream()</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">                .filter(c -&gt; c.getEstado() == EstadoCita.ACTIVA)</span>
-<span class="fc" id="L179">                .map(this::toResponse)</span>
-<span class="fc" id="L180">                .toList();</span>
+<span class="fc" id="L186">        return citaRepository.findByPacienteId(pacienteId).stream()</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                .filter(c -&gt; c.getEstado() == EstadoCita.ACTIVA)</span>
+<span class="fc" id="L188">                .map(this::toResponse)</span>
+<span class="fc" id="L189">                .toList();</span>
     }
 
     /**
@@ -187,60 +196,60 @@ public class CitaService {
      * @return list of active cita responses for the doctor
      */
     public List&lt;CitaResponse&gt; getCitasPorMedico(String medicoId) {
-<span class="fc" id="L190">        return citaRepository.findByMedicoId(medicoId).stream()</span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">                .filter(c -&gt; c.getEstado() == EstadoCita.ACTIVA)</span>
-<span class="fc" id="L192">                .map(this::toResponse)</span>
-<span class="fc" id="L193">                .toList();</span>
+<span class="fc" id="L199">        return citaRepository.findByMedicoId(medicoId).stream()</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">                .filter(c -&gt; c.getEstado() == EstadoCita.ACTIVA)</span>
+<span class="fc" id="L201">                .map(this::toResponse)</span>
+<span class="fc" id="L202">                .toList();</span>
     }
 
     /**
      * Validates that the user has ownership of the cita or is MEDICO/ADMIN.
      */
     private void validarOwnership(Cita cita, String username, String rol) {
-<span class="fc bfc" id="L200" title="All 4 branches covered.">        if (&quot;MEDICO&quot;.equals(rol) || &quot;ADMIN&quot;.equals(rol)) {</span>
-<span class="fc" id="L201">            return; // MEDICO and ADMIN can access any cita</span>
+<span class="fc bfc" id="L209" title="All 4 branches covered.">        if (&quot;MEDICO&quot;.equals(rol) || &quot;ADMIN&quot;.equals(rol)) {</span>
+<span class="fc" id="L210">            return; // MEDICO and ADMIN can access any cita</span>
         }
 
         // PACIENTE can only access their own citas
-<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (!cita.getPaciente().getUsername().equals(username)) {</span>
-<span class="fc" id="L206">            throw new AccessDeniedException(&quot;No puedes ver esta cita&quot;);</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (!cita.getPaciente().getUsername().equals(username)) {</span>
+<span class="fc" id="L215">            throw new AccessDeniedException(&quot;No puedes ver esta cita&quot;);</span>
         }
-<span class="fc" id="L208">    }</span>
+<span class="fc" id="L217">    }</span>
 
     /**
      * Validates that the hora is within the allowed range (08:00-17:00).
      */
     private void validarHorario(LocalTime hora) {
-<span class="fc bfc" id="L214" title="All 4 branches covered.">        if (hora.isBefore(HORA_INICIO) || hora.isAfter(HORA_FIN)) {</span>
-<span class="fc" id="L215">            throw new BusinessValidationException(</span>
+<span class="fc bfc" id="L223" title="All 4 branches covered.">        if (hora.isBefore(HORA_INICIO) || hora.isAfter(HORA_FIN)) {</span>
+<span class="fc" id="L224">            throw new BusinessValidationException(</span>
                 &quot;Horario fuera de rango (08:00-17:00)&quot;
             );
         }
-<span class="fc" id="L219">    }</span>
+<span class="fc" id="L228">    }</span>
 
     /**
      * Validates that the hora is on a valid slot (:00 or :30).
      */
     private void validarSlot(LocalTime hora) {
-<span class="fc" id="L225">        int minutos = hora.getMinute();</span>
-<span class="pc bpc" id="L226" title="1 of 4 branches missed.">        if (minutos != 0 &amp;&amp; minutos != 30) {</span>
-<span class="fc" id="L227">            throw new BusinessValidationException(</span>
+<span class="fc" id="L234">        int minutos = hora.getMinute();</span>
+<span class="pc bpc" id="L235" title="1 of 4 branches missed.">        if (minutos != 0 &amp;&amp; minutos != 30) {</span>
+<span class="fc" id="L236">            throw new BusinessValidationException(</span>
                 &quot;Duración debe ser 30 minutos en slots de 30 min&quot;
             );
         }
-<span class="fc" id="L231">    }</span>
+<span class="fc" id="L240">    }</span>
 
     /**
      * Validates that the fecha is a weekday (Monday-Friday).
      */
     private void validarDiaHabil(LocalDate fecha) {
-<span class="fc" id="L237">        DayOfWeek day = fecha.getDayOfWeek();</span>
-<span class="fc bfc" id="L238" title="All 4 branches covered.">        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {</span>
-<span class="fc" id="L239">            throw new BusinessValidationException(</span>
+<span class="fc" id="L246">        DayOfWeek day = fecha.getDayOfWeek();</span>
+<span class="fc bfc" id="L247" title="All 4 branches covered.">        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {</span>
+<span class="fc" id="L248">            throw new BusinessValidationException(</span>
                 &quot;No se permiten citas en fins de semana&quot;
             );
         }
-<span class="fc" id="L243">    }</span>
+<span class="fc" id="L252">    }</span>
 
     /**
      * Validates that a patient exists by ID.
@@ -249,12 +258,12 @@ public class CitaService {
      * @throws BusinessValidationException if patient does not exist
      */
     private void validarExistenciaPaciente(String pacienteId) {
-<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (!pacienteRepository.existsById(pacienteId)) {</span>
-<span class="fc" id="L253">            throw new BusinessValidationException(</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (!pacienteRepository.existsById(pacienteId)) {</span>
+<span class="fc" id="L262">            throw new BusinessValidationException(</span>
                 &quot;Paciente no encontrado: &quot; + pacienteId
             );
         }
-<span class="fc" id="L257">    }</span>
+<span class="fc" id="L266">    }</span>
 
     /**
      * Validates that a doctor exists by ID.
@@ -263,26 +272,58 @@ public class CitaService {
      * @throws BusinessValidationException if doctor does not exist
      */
     private void validarExistenciaMedico(String medicoId) {
-<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (!medicoRepository.existsById(medicoId)) {</span>
-<span class="fc" id="L267">            throw new BusinessValidationException(</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        if (!medicoRepository.existsById(medicoId)) {</span>
+<span class="fc" id="L276">            throw new BusinessValidationException(</span>
                 &quot;Médico no encontrado: &quot; + medicoId
             );
         }
-<span class="fc" id="L271">    }</span>
+<span class="fc" id="L280">    }</span>
+
+    /**
+     * Validates that the patient does not have 3 or more active citas.
+     *
+     * @param pacienteId the patient ID
+     * @throws BusinessValidationException if patient already has 3 active citas
+     */
+    private void validarMax3CitasActivas(String pacienteId) {
+<span class="fc" id="L289">        long activeCount = citaRepository.countByPacienteIdAndEstado(pacienteId, EstadoCita.ACTIVA);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (activeCount &gt;= 3) {</span>
+<span class="fc" id="L291">            throw new BusinessValidationException(</span>
+                &quot;El paciente ya tiene 3 citas activas. No se puede crear más.&quot;
+            );
+        }
+<span class="fc" id="L295">    }</span>
+
+    /**
+     * Validates that no duplicate cita exists for the same doctor, date, and time.
+     *
+     * @param medicoId the doctor ID
+     * @param fecha the appointment date
+     * @param hora the appointment time
+     * @throws BusinessValidationException if a duplicate cita already exists
+     */
+    private void validarAntiDuplicados(String medicoId, LocalDate fecha, LocalTime hora) {
+<span class="fc" id="L306">        boolean exists = citaRepository.existsByMedicoIdAndFechaAndHora(medicoId, fecha, hora);</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if (exists) {</span>
+<span class="fc" id="L308">            throw new BusinessValidationException(</span>
+                &quot;Ya existe una cita con este médico a esta hora&quot;
+            );
+        }
+<span class="fc" id="L312">    }</span>
 
     /**
      * Converts a Cita entity to a CitaResponse DTO.
      */
     private CitaResponse toResponse(Cita cita) {
-<span class="fc" id="L277">        return new CitaResponse(</span>
-<span class="fc" id="L278">            cita.getId(),</span>
-<span class="fc" id="L279">            cita.getPaciente().getId(),</span>
-<span class="fc" id="L280">            cita.getMedico().getId(),</span>
-<span class="fc" id="L281">            cita.getFecha(),</span>
-<span class="fc" id="L282">            cita.getHora(),</span>
-<span class="fc" id="L283">            cita.getEstado().name(),</span>
-<span class="fc" id="L284">            cita.getMotivoConsulta(),</span>
-<span class="fc" id="L285">            cita.getFechaCreacion()</span>
+<span class="fc" id="L318">        return new CitaResponse(</span>
+<span class="fc" id="L319">            cita.getId(),</span>
+<span class="fc" id="L320">            cita.getPaciente().getId(),</span>
+<span class="fc" id="L321">            cita.getMedico().getId(),</span>
+<span class="fc" id="L322">            cita.getFecha(),</span>
+<span class="fc" id="L323">            cita.getHora(),</span>
+<span class="fc" id="L324">            cita.getEstado().name(),</span>
+<span class="fc" id="L325">            cita.getMotivoConsulta(),</span>
+<span class="fc" id="L326">            cita.getFechaCreacion()</span>
         );
     }
 }

@@ -1,3 +1,4 @@
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\config\RateLimitFilter.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\config\SecurityConfig.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\AuthController.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\controller\CitaController.java
@@ -12,6 +13,7 @@ C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clin
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\exception\BusinessValidationException.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\exception\CitaNotFoundException.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\exception\GlobalExceptionHandler.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\exception\RateLimitExceededException.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\MicroservicioClinicaApplication.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\Cita.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\model\enums\EstadoCita.java
@@ -23,6 +25,7 @@ C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clin
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\PacienteRepository.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\repository\UsuarioRepository.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\security\JwtAuthenticationFilter.java
+C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\AuditService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\AuthService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\CitaService.java
 C:\Users\Gustavo\Desktop\proyectos\laboratorio_SDD_Vortex\src\main\java\com\clinica\service\JwtService.java

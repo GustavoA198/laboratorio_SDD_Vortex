@@ -19,25 +19,29 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
 
-<span class="nc" id="L23">    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {</span>
-<span class="nc" id="L24">        this.jwtAuthenticationFilter = jwtAuthenticationFilter;</span>
-<span class="nc" id="L25">    }</span>
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+<span class="nc" id="L25">                         RateLimitFilter rateLimitFilter) {</span>
+<span class="nc" id="L26">        this.jwtAuthenticationFilter = jwtAuthenticationFilter;</span>
+<span class="nc" id="L27">        this.rateLimitFilter = rateLimitFilter;</span>
+<span class="nc" id="L28">    }</span>
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-<span class="nc" id="L29">        http</span>
-<span class="nc" id="L30">                .csrf(csrf -&gt; csrf.disable())</span>
-<span class="nc" id="L31">                .sessionManagement(session -&gt; session</span>
-<span class="nc" id="L32">                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
-<span class="nc" id="L33">                .authorizeHttpRequests(auth -&gt; auth</span>
-<span class="nc" id="L34">                        .requestMatchers(&quot;/api/v1/auth/**&quot;).permitAll()</span>
-<span class="nc" id="L35">                        .requestMatchers(&quot;/swagger-ui/**&quot;, &quot;/v3/api-docs/**&quot;).permitAll()</span>
-<span class="nc" id="L36">                        .anyRequest().authenticated()</span>
+<span class="nc" id="L32">        http</span>
+<span class="nc" id="L33">                .csrf(csrf -&gt; csrf.disable())</span>
+<span class="nc" id="L34">                .sessionManagement(session -&gt; session</span>
+<span class="nc" id="L35">                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="nc" id="L36">                .authorizeHttpRequests(auth -&gt; auth</span>
+<span class="nc" id="L37">                        .requestMatchers(&quot;/api/v1/auth/**&quot;).permitAll()</span>
+<span class="nc" id="L38">                        .requestMatchers(&quot;/swagger-ui/**&quot;, &quot;/v3/api-docs/**&quot;).permitAll()</span>
+<span class="nc" id="L39">                        .anyRequest().authenticated()</span>
                 )
-<span class="nc" id="L38">                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);</span>
+<span class="nc" id="L41">                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)</span>
+<span class="nc" id="L42">                .addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class);</span>
 
-<span class="nc" id="L40">        return http.build();</span>
+<span class="nc" id="L44">        return http.build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

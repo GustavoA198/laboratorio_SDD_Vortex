@@ -69,6 +69,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles rate limit exceeded exceptions.
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceededException(
+            RateLimitExceededException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        response.put("error", "RATE_LIMIT_EXCEEDED");
+        response.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+    }
+
+    /**
      * Handles IllegalStateException (e.g., conflict states like trying to update a non-ACTIVA cita).
      */
     @ExceptionHandler(IllegalStateException.class)
