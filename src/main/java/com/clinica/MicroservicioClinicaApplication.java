@@ -13,3 +13,4 @@ public class MicroservicioClinicaApplication {
     public static void main(String[] args) {
         SpringApplication.run(MicroservicioClinicaApplication.class, args);
     }
+}

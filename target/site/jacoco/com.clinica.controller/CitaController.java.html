@@ -93,5 +93,31 @@ public class CitaController {
 <span class="nc" id="L93">        citaService.cancelCita(id);</span>
 <span class="nc" id="L94">        return ResponseEntity.noContent().build();</span>
     }
+
+    /**
+     * Lists all ACTIVE citas for a specific patient.
+     *
+     * @param pacienteId the patient ID
+     * @return 200 OK with list of active citas for the patient
+     */
+    @GetMapping(&quot;/mis-citas&quot;)
+    @Operation(summary = &quot;Mis citas&quot;, description = &quot;Retorna las citas activas de un paciente&quot;)
+    public ResponseEntity&lt;List&lt;CitaResponse&gt;&gt; getMisCitas(@RequestParam String pacienteId) {
+<span class="nc" id="L106">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorPaciente(pacienteId);</span>
+<span class="nc" id="L107">        return ResponseEntity.ok(responses);</span>
+    }
+
+    /**
+     * Lists all ACTIVE citas for a specific doctor.
+     *
+     * @param medicoId the doctor ID
+     * @return 200 OK with list of active citas for the doctor
+     */
+    @GetMapping(&quot;/medico/{medicoId}&quot;)
+    @Operation(summary = &quot;Citas por médico&quot;, description = &quot;Retorna las citas activas de un médico&quot;)
+    public ResponseEntity&lt;List&lt;CitaResponse&gt;&gt; getCitasPorMedico(@PathVariable String medicoId) {
+<span class="nc" id="L119">        List&lt;CitaResponse&gt; responses = citaService.getCitasPorMedico(medicoId);</span>
+<span class="nc" id="L120">        return ResponseEntity.ok(responses);</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

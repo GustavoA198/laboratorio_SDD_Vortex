@@ -5,8 +5,12 @@ import com.clinica.dto.CitaResponse;
 import com.clinica.exception.BusinessValidationException;
 import com.clinica.exception.CitaNotFoundException;
 import com.clinica.model.Cita;
+import com.clinica.model.Medico;
+import com.clinica.model.Paciente;
 import com.clinica.model.enums.EstadoCita;
 import com.clinica.repository.CitaRepository;
+import com.clinica.repository.MedicoRepository;
+import com.clinica.repository.PacienteRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -26,9 +30,15 @@ public class CitaService {
     private static final int SLOT_MINUTOS = 30;
 
     private final CitaRepository citaRepository;
+    private final PacienteRepository pacienteRepository;
+    private final MedicoRepository medicoRepository;
 
-    public CitaService(CitaRepository citaRepository) {
+    public CitaService(CitaRepository citaRepository,
+                       PacienteRepository pacienteRepository,
+                       MedicoRepository medicoRepository) {
         this.citaRepository = citaRepository;
+        this.pacienteRepository = pacienteRepository;
+        this.medicoRepository = medicoRepository;
     }
 
     /**
@@ -42,10 +52,15 @@ public class CitaService {
         validarHorario(request.hora());
         validarSlot(request.hora());
         validarDiaHabil(request.fecha());
+        validarExistenciaPaciente(request.pacienteId());
+        validarExistenciaMedico(request.medicoId());
+
+        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());
+        Medico medico = medicoRepository.getReferenceById(request.medicoId());
 
         Cita cita = Cita.builder()
-                .pacienteId(request.pacienteId())
-                .medicoId(request.medicoId())
+                .paciente(paciente)
+                .medico(medico)
                 .fecha(request.fecha())
                 .hora(request.hora())
                 .estado(EstadoCita.ACTIVA)
@@ -92,9 +107,14 @@ public class CitaService {
         validarHorario(request.hora());
         validarSlot(request.hora());
         validarDiaHabil(request.fecha());
+        validarExistenciaPaciente(request.pacienteId());
+        validarExistenciaMedico(request.medicoId());
 
-        cita.setPacienteId(request.pacienteId());
-        cita.setMedicoId(request.medicoId());
+        Paciente paciente = pacienteRepository.getReferenceById(request.pacienteId());
+        Medico medico = medicoRepository.getReferenceById(request.medicoId());
+
+        cita.setPaciente(paciente);
+        cita.setMedico(medico);
         cita.setFecha(request.fecha());
         cita.setHora(request.hora());
         cita.setMotivoConsulta(request.motivoConsulta());
@@ -126,6 +146,32 @@ public class CitaService {
      */
     public List<CitaResponse> listCitas() {
         return citaRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Gets citas filtered by ACTIVA state for a specific patient.
+     *
+     * @param pacienteId the patient ID
+     * @return list of active cita responses for the patient
+     */
+    public List<CitaResponse> getCitasPorPaciente(String pacienteId) {
+        return citaRepository.findByPacienteId(pacienteId).stream()
+                .filter(c -> c.getEstado() == EstadoCita.ACTIVA)
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Gets citas filtered by ACTIVA state for a specific doctor.
+     *
+     * @param medicoId the doctor ID
+     * @return list of active cita responses for the doctor
+     */
+    public List<CitaResponse> getCitasPorMedico(String medicoId) {
+        return citaRepository.findByMedicoId(medicoId).stream()
+                .filter(c -> c.getEstado() == EstadoCita.ACTIVA)
                 .map(this::toResponse)
                 .toList();
     }
@@ -166,13 +212,41 @@ public class CitaService {
     }
 
     /**
+     * Validates that a patient exists by ID.
+     *
+     * @param pacienteId the patient ID
+     * @throws BusinessValidationException if patient does not exist
+     */
+    private void validarExistenciaPaciente(String pacienteId) {
+        if (!pacienteRepository.existsById(pacienteId)) {
+            throw new BusinessValidationException(
+                "Paciente no encontrado: " + pacienteId
+            );
+        }
+    }
+
+    /**
+     * Validates that a doctor exists by ID.
+     *
+     * @param medicoId the doctor ID
+     * @throws BusinessValidationException if doctor does not exist
+     */
+    private void validarExistenciaMedico(String medicoId) {
+        if (!medicoRepository.existsById(medicoId)) {
+            throw new BusinessValidationException(
+                "Médico no encontrado: " + medicoId
+            );
+        }
+    }
+
+    /**
      * Converts a Cita entity to a CitaResponse DTO.
      */
     private CitaResponse toResponse(Cita cita) {
         return new CitaResponse(
             cita.getId(),
-            cita.getPacienteId(),
-            cita.getMedicoId(),
+            cita.getPaciente().getId(),
+            cita.getMedico().getId(),
             cita.getFecha(),
             cita.getHora(),
             cita.getEstado().name(),

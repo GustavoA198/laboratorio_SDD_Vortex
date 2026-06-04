@@ -5,8 +5,12 @@ import com.clinica.dto.CitaResponse;
 import com.clinica.exception.BusinessValidationException;
 import com.clinica.exception.CitaNotFoundException;
 import com.clinica.model.Cita;
+import com.clinica.model.Medico;
+import com.clinica.model.Paciente;
 import com.clinica.model.enums.EstadoCita;
 import com.clinica.repository.CitaRepository;
+import com.clinica.repository.MedicoRepository;
+import com.clinica.repository.PacienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,15 +38,41 @@ class CitaServiceTest {
     @Mock
     private CitaRepository citaRepository;
 
+    @Mock
+    private PacienteRepository pacienteRepository;
+
+    @Mock
+    private MedicoRepository medicoRepository;
+
     @InjectMocks
     private CitaService citaService;
 
-    private Cita createTestCita(Long id, String pacienteId, String medicoId,
+    private Paciente createTestPaciente() {
+        return Paciente.builder()
+                .id("PAC-001")
+                .nombre("Juan Pérez")
+                .email("juan.perez@email.com")
+                .telefono("+54-11-5555-1234")
+                .fechaRegistro(LocalDate.of(2025, 1, 15))
+                .build();
+    }
+
+    private Medico createTestMedico() {
+        return Medico.builder()
+                .id("MED-001")
+                .nombre("Dr. Carlos Rodríguez")
+                .especialidad("Cardiología")
+                .email("carlos.rodriguez@clinica.com")
+                .horarioAtencion("Lunes a Viernes 08:00-17:00")
+                .build();
+    }
+
+    private Cita createTestCita(Long id, Paciente paciente, Medico medico,
                                  LocalDate fecha, LocalTime hora, EstadoCita estado) {
         return Cita.builder()
                 .id(id)
-                .pacienteId(pacienteId)
-                .medicoId(medicoId)
+                .paciente(paciente)
+                .medico(medico)
                 .fecha(fecha)
                 .hora(hora)
                 .estado(estado)
@@ -83,9 +113,15 @@ class CitaServiceTest {
         void shouldCreateCitaSuccessfully() {
             // Given
             CitaRequest request = createValidRequest();
-            Cita savedCita = createTestCita(1L, request.pacienteId(), request.medicoId(),
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita savedCita = createTestCita(1L, paciente, medico,
                     request.fecha(), request.hora(), EstadoCita.ACTIVA);
 
+            when(pacienteRepository.existsById("PAC-001")).thenReturn(true);
+            when(medicoRepository.existsById("MED-001")).thenReturn(true);
+            when(pacienteRepository.getReferenceById("PAC-001")).thenReturn(paciente);
+            when(medicoRepository.getReferenceById("MED-001")).thenReturn(medico);
             when(citaRepository.save(any(Cita.class))).thenReturn(savedCita);
 
             // When
@@ -204,6 +240,37 @@ class CitaServiceTest {
         }
 
         @Test
+        @DisplayName("Should fail when paciente does not exist")
+        void shouldFailWhenPacienteNotExists() {
+            // Given
+            CitaRequest request = createValidRequest();
+            when(pacienteRepository.existsById("PAC-001")).thenReturn(false);
+
+            // When & Then
+            BusinessValidationException exception = assertThrows(
+                BusinessValidationException.class,
+                () -> citaService.createCita(request)
+            );
+            assertTrue(exception.getMessage().contains("Paciente no encontrado"));
+        }
+
+        @Test
+        @DisplayName("Should fail when medico does not exist")
+        void shouldFailWhenMedicoNotExists() {
+            // Given
+            CitaRequest request = createValidRequest();
+            when(pacienteRepository.existsById("PAC-001")).thenReturn(true);
+            when(medicoRepository.existsById("MED-001")).thenReturn(false);
+
+            // When & Then
+            BusinessValidationException exception = assertThrows(
+                BusinessValidationException.class,
+                () -> citaService.createCita(request)
+            );
+            assertTrue(exception.getMessage().contains("Médico no encontrado"));
+        }
+
+        @Test
         @DisplayName("Should fail when hora is exactly 17:00")
         void shouldFailWhenHoraExactly17() {
             // Given - 17:00 is the boundary, it should be allowed since spec says 08:00 <= hora <= 17:00
@@ -214,8 +281,14 @@ class CitaServiceTest {
             CitaRequest request = new CitaRequest(
                 "PAC-001", "MED-001", fecha, LocalTime.of(17, 0), "Consulta"
             );
-            Cita savedCita = createTestCita(1L, request.pacienteId(), request.medicoId(),
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita savedCita = createTestCita(1L, paciente, medico,
                     request.fecha(), request.hora(), EstadoCita.ACTIVA);
+            when(pacienteRepository.existsById("PAC-001")).thenReturn(true);
+            when(medicoRepository.existsById("MED-001")).thenReturn(true);
+            when(pacienteRepository.getReferenceById("PAC-001")).thenReturn(paciente);
+            when(medicoRepository.getReferenceById("MED-001")).thenReturn(medico);
             when(citaRepository.save(any(Cita.class))).thenReturn(savedCita);
 
             // When
@@ -234,7 +307,9 @@ class CitaServiceTest {
         @DisplayName("Should return cita when exists")
         void shouldReturnCitaWhenExists() {
             // Given
-            Cita cita = createTestCita(1L, "PAC-001", "MED-001",
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita cita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
 
@@ -270,9 +345,18 @@ class CitaServiceTest {
         @DisplayName("Should update ACTIVA cita successfully")
         void shouldUpdateActivaCitaSuccessfully() {
             // Given
-            Cita existingCita = createTestCita(1L, "PAC-001", "MED-001",
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita existingCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(existingCita));
+            when(pacienteRepository.existsById("PAC-002")).thenReturn(true);
+            when(medicoRepository.existsById("MED-001")).thenReturn(true);
+
+            Paciente paciente2 = Paciente.builder().id("PAC-002").nombre("María").build();
+            when(pacienteRepository.getReferenceById("PAC-002")).thenReturn(paciente2);
+            when(medicoRepository.getReferenceById("MED-001")).thenReturn(medico);
+
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
             LocalDate newFecha = getNextTuesday();
@@ -294,7 +378,9 @@ class CitaServiceTest {
         @DisplayName("Should throw exception when updating non-ACTIVA cita")
         void shouldThrowWhenUpdatingNonActiva() {
             // Given
-            Cita cancelledCita = createTestCita(1L, "PAC-001", "MED-001",
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita cancelledCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.CANCELADA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(cancelledCita));
 
@@ -310,7 +396,7 @@ class CitaServiceTest {
 
         @Test
         @DisplayName("Should throw CitaNotFoundException when updating non-existent cita")
-        void shouldThrowWhenUpdatingNonExistent() {
+        void shouldThrowWhenUpdatingNonExuent() {
             // Given
             when(citaRepository.findById(999L)).thenReturn(Optional.empty());
             CitaRequest updateRequest = createValidRequest();
@@ -326,11 +412,14 @@ class CitaServiceTest {
         @DisplayName("Should fail update when new time is invalid")
         void shouldFailUpdateWithInvalidTime() {
             // Given
-            Cita existingCita = createTestCita(1L, "PAC-001", "MED-001",
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita existingCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(existingCita));
 
             LocalDate newFecha = getNextTuesday();
+
             CitaRequest invalidRequest = new CitaRequest(
                 "PAC-001", "MED-001", newFecha, LocalTime.of(9, 15), "Consulta" // Invalid slot
             );
@@ -351,7 +440,9 @@ class CitaServiceTest {
         @DisplayName("Should cancel cita successfully")
         void shouldCancelCitaSuccessfully() {
             // Given
-            Cita activaCita = createTestCita(1L, "PAC-001", "MED-001",
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita activaCita = createTestCita(1L, paciente, medico,
                     LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
             when(citaRepository.findById(1L)).thenReturn(Optional.of(activaCita));
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -367,7 +458,7 @@ class CitaServiceTest {
 
         @Test
         @DisplayName("Should throw CitaNotFoundException when cancelling non-existent")
-        void shouldThrowWhenCancellingNonExistent() {
+        void shouldThrowWhenCancellingNonExuent() {
             // Given
             when(citaRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -387,10 +478,12 @@ class CitaServiceTest {
         @DisplayName("Should return list of citas")
         void shouldReturnListOfCitas() {
             // Given
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
             List<Cita> citas = List.of(
-                createTestCita(1L, "PAC-001", "MED-001",
+                createTestCita(1L, paciente, medico,
                         LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA),
-                createTestCita(2L, "PAC-002", "MED-002",
+                createTestCita(2L, paciente, medico,
                         LocalDate.now().plusDays(2), LocalTime.of(10, 0), EstadoCita.ACTIVA)
             );
             when(citaRepository.findAll()).thenReturn(citas);
@@ -417,6 +510,58 @@ class CitaServiceTest {
             // Then
             assertNotNull(responses);
             assertTrue(responses.isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("getCitasPorPaciente Tests")
+    class GetCitasPorPacienteTests {
+
+        @Test
+        @DisplayName("Should return only ACTIVA citas for paciente")
+        void shouldReturnOnlyActivaCitasForPaciente() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita cita1 = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            Cita cita2 = createTestCita(2L, paciente, medico,
+                    LocalDate.now().plusDays(2), LocalTime.of(10, 0), EstadoCita.CANCELADA);
+            when(citaRepository.findByPacienteId("PAC-001")).thenReturn(List.of(cita1, cita2));
+
+            // When
+            List<CitaResponse> responses = citaService.getCitasPorPaciente("PAC-001");
+
+            // Then
+            assertNotNull(responses);
+            assertEquals(1, responses.size());
+            assertEquals(1L, responses.get(0).id());
+            assertEquals("ACTIVA", responses.get(0).estado());
+        }
+    }
+
+    @Nested
+    @DisplayName("getCitasPorMedico Tests")
+    class GetCitasPorMedicoTests {
+
+        @Test
+        @DisplayName("Should return only ACTIVA citas for medico")
+        void shouldReturnOnlyActivaCitasForMedico() {
+            // Given
+            Paciente paciente = createTestPaciente();
+            Medico medico = createTestMedico();
+            Cita cita1 = createTestCita(1L, paciente, medico,
+                    LocalDate.now().plusDays(1), LocalTime.of(9, 0), EstadoCita.ACTIVA);
+            Cita cita2 = createTestCita(2L, paciente, medico,
+                    LocalDate.now().plusDays(2), LocalTime.of(10, 0), EstadoCita.ACTIVA);
+            when(citaRepository.findByMedicoId("MED-001")).thenReturn(List.of(cita1, cita2));
+
+            // When
+            List<CitaResponse> responses = citaService.getCitasPorMedico("MED-001");
+
+            // Then
+            assertNotNull(responses);
+            assertEquals(2, responses.size());
         }
     }
 }

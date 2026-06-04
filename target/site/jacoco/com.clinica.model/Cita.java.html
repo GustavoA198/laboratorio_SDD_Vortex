@@ -27,11 +27,13 @@ public class Cita {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = &quot;paciente_id&quot;, nullable = false)
-    private String pacienteId;
+    @ManyToOne
+    @JoinColumn(name = &quot;paciente_id&quot;, nullable = false)
+    private Paciente paciente;
 
-    @Column(name = &quot;medico_id&quot;, nullable = false)
-    private String medicoId;
+    @ManyToOne
+    @JoinColumn(name = &quot;medico_id&quot;, nullable = false)
+    private Medico medico;
 
     @Column(name = &quot;fecha&quot;, nullable = false)
     private LocalDate fecha;
@@ -51,12 +53,12 @@ public class Cita {
 
     @PrePersist
     protected void onCreate() {
-<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (fechaCreacion == null) {</span>
-<span class="nc" id="L55">            fechaCreacion = LocalDateTime.now();</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (fechaCreacion == null) {</span>
+<span class="fc" id="L57">            fechaCreacion = LocalDateTime.now();</span>
         }
-<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (estado == null) {</span>
-<span class="nc" id="L58">            estado = EstadoCita.ACTIVA;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (estado == null) {</span>
+<span class="fc" id="L60">            estado = EstadoCita.ACTIVA;</span>
         }
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L62">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

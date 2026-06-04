@@ -93,4 +93,30 @@ public class CitaController {
         citaService.cancelCita(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Lists all ACTIVE citas for a specific patient.
+     *
+     * @param pacienteId the patient ID
+     * @return 200 OK with list of active citas for the patient
+     */
+    @GetMapping("/mis-citas")
+    @Operation(summary = "Mis citas", description = "Retorna las citas activas de un paciente")
+    public ResponseEntity<List<CitaResponse>> getMisCitas(@RequestParam String pacienteId) {
+        List<CitaResponse> responses = citaService.getCitasPorPaciente(pacienteId);
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Lists all ACTIVE citas for a specific doctor.
+     *
+     * @param medicoId the doctor ID
+     * @return 200 OK with list of active citas for the doctor
+     */
+    @GetMapping("/medico/{medicoId}")
+    @Operation(summary = "Citas por médico", description = "Retorna las citas activas de un médico")
+    public ResponseEntity<List<CitaResponse>> getCitasPorMedico(@PathVariable String medicoId) {
+        List<CitaResponse> responses = citaService.getCitasPorMedico(medicoId);
+        return ResponseEntity.ok(responses);
+    }
 }

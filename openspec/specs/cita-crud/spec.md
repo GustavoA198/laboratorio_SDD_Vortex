@@ -8,18 +8,30 @@ Gestionar citas médicas con operaciones CRUD y control de estados.
 
 ### Requirement: Crear Cita
 
-El sistema DEBE crear una nueva cita cuando se reciben datos válidos.
+El sistema DEBE crear una nueva cita cuando se reciben datos válidos Y los IDs de paciente y médico existen como entidades.
 
-- GIVEN datos de cita válidos (pacienteId, medicoId, fecha, hora, duracion)
+- GIVEN datos de cita válidos (pacienteId, medicoId, fecha, hora, duracion) Y pacienteId existe Y medicoId existe
 - WHEN POST /api/v1/citas es llamado
 - THEN respuesta 201 Created con CitaResponse
 - AND cita queda en estado ACTIVA
 
 #### Scenario: Crear - Success
 
-- GIVEN datos válidos de cita
+- GIVEN datos válidos de cita Y pacienteId existe Y medicoId existe
 - WHEN se envía POST /api/v1/citas
-- THEN返回 201 con cita creada en estado ACTIVA
+- THEN 返回 201 con cita creada en estado ACTIVA
+
+#### Scenario: Crear - Paciente no existe
+
+- GIVEN pacienteId no existe en base de datos
+- WHEN se envía POST /api/v1/citas con ese pacienteId
+- THEN 返回 400 Bad Request con mensaje de error
+
+#### Scenario: Crear - Médico no existe
+
+- GIVEN medicoId no existe en base de datos
+- WHEN se envía POST /api/v1/citas con ese medicoId
+- THEN 返回 400 Bad Request con mensaje de error
 
 #### Scenario: Crear - Datos inválidos
 
