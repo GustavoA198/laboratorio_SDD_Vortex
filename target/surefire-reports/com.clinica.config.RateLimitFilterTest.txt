@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.clinica.config.RateLimitFilterTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.878 s -- in com.clinica.config.RateLimitFilterTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.553 s -- in com.clinica.config.RateLimitFilterTest
