@@ -6,6 +6,7 @@ Microservicio Clinica,com.clinica.controller,PacienteController,33,0,0,0,12,0,3,
 Microservicio Clinica,com.clinica.controller,AuthController,14,0,0,0,5,0,2,0,2,0
 Microservicio Clinica,com.clinica.controller,MedicoController,33,0,0,0,12,0,3,0,3,0
 Microservicio Clinica,com.clinica,MicroservicioClinicaApplication,8,0,0,0,3,0,2,0,2,0
+Microservicio Clinica,com.clinica.config,DataInitializer,226,0,2,0,68,0,4,0,3,0
 Microservicio Clinica,com.clinica.config,SecurityConfig,66,0,0,0,15,0,5,0,5,0
 Microservicio Clinica,com.clinica.config,RateLimitFilter,22,68,4,6,4,18,4,7,1,5
 Microservicio Clinica,com.clinica.service,CitaService,1,465,2,30,0,111,2,37,0,23
